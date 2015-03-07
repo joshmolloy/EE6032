@@ -5,26 +5,51 @@
  */
 package securityproject;
 
+import java.awt.BorderLayout;
+import java.awt.Button;
+import java.awt.Dimension;
+import java.awt.Event;
+import java.awt.TextArea;
+import java.awt.TextField;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 
 /**
  *
  * @author Josh
  */
-public class SecurityGUI extends javax.swing.JFrame {
-    
-boolean serverStarted = false;  
-Client client = new Client("localhost",8080);
-Server server = new Server(8080);
-int iteration = 0;
-int port = 8085;
-boolean listening = false;
+public class SecurityGUI extends javax.swing.JFrame implements Runnable{
+    Socket soc;    
+    String sendTo;
+    String LoginName;
+    Thread t=null;
+    DataOutputStream dout;
+    DataInputStream din;
 
-
-    
  static {
     try {
         System.loadLibrary("chilkat");
@@ -33,12 +58,60 @@ boolean listening = false;
       System.exit(1);
     }
   }
+ 
+    SecurityGUI(String LoginName,String chatwith) throws Exception
+    {
+        super(LoginName);
+        this.LoginName=LoginName;
+        sendTo=chatwith;
+        soc=new Socket("127.0.0.1",5217);
+
+        din=new DataInputStream(soc.getInputStream()); 
+        dout=new DataOutputStream(soc.getOutputStream());        
+        dout.writeUTF(LoginName);
+
+        t=new Thread(this);
+        t.start();
+        initComponents();
+
+    }
     
     /**
      * Creates new form SecurityGUI
      */
-    public SecurityGUI() {
+    public SecurityGUI() throws IOException {
         initComponents();
+        
+//                
+//        JTextArea textArea = new JTextArea();
+//        JScrollPane scrollpane = new JScrollPane(textArea);
+//        PrintStream printStream = new PrintStream(new CustomOutputStream(textArea));
+//        System.setOut(printStream);
+//        System.setErr(printStream);
+//        textArea.setVisible(true);
+//        OutputPanel.setLayout(new java.awt.BorderLayout());
+//        OutputPanel.add(scrollpane, BorderLayout.CENTER);
+//        OutputPanel.setPreferredSize(new Dimension(450,200));
+//        OutputPanel.validate();
+//        OutputPanel.setVisible(true);
+//        OutputPanel.repaint();
+
+    }
+    
+    @Override
+    public void run()
+    {        
+        while(true)
+        {
+            try
+            {
+                Output.append( "\n" + sendTo + " Says :" + din.readUTF());
+            }
+            catch(Exception ex)
+            {
+                ex.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -50,7 +123,6 @@ boolean listening = false;
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jTextField3 = new javax.swing.JTextField();
         jTabbedPane1 = new javax.swing.JTabbedPane();
         SendPanel = new javax.swing.JPanel();
         MessageText = new javax.swing.JTextField();
@@ -62,7 +134,6 @@ boolean listening = false;
         MessageSHA = new javax.swing.JTextField();
         RSAEncryptedMessageLabel2 = new javax.swing.JLabel();
         MessageRSAEncrypted = new javax.swing.JTextField();
-        SendButton = new javax.swing.JButton();
         ReceivePanel = new javax.swing.JPanel();
         MessageAESReceived = new javax.swing.JTextField();
         AESDecryptedMessageLabel = new javax.swing.JLabel();
@@ -70,17 +141,16 @@ boolean listening = false;
         MessageRSAReceived = new javax.swing.JTextField();
         MessageReceived = new javax.swing.JTextField();
         RSADecryptedMessageLabel1 = new javax.swing.JLabel();
-        Listen = new javax.swing.JButton();
         SHAHashedMessageLabel = new javax.swing.JLabel();
         MessageHashReceived = new javax.swing.JTextField();
         ConnectPanel = new javax.swing.JPanel();
-        ConnectButton = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
+        OutputPanel = new javax.swing.JPanel();
+        inputText = new javax.swing.JTextField();
+        SendButton = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        ConnectionOutput = new javax.swing.JTextPane();
+        Output = new javax.swing.JTextArea();
         jLabel1 = new javax.swing.JLabel();
-
-        jTextField3.setText("jTextField3");
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -103,14 +173,6 @@ boolean listening = false;
 
         RSAEncryptedMessageLabel2.setFont(new java.awt.Font("Segoe UI Light", 0, 14)); // NOI18N
         RSAEncryptedMessageLabel2.setText("RSA encrypted message:");
-
-        SendButton.setFont(new java.awt.Font("Segoe UI Light", 0, 14)); // NOI18N
-        SendButton.setText("Send");
-        SendButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                SendButtonActionPerformed(evt);
-            }
-        });
 
         javax.swing.GroupLayout SendPanelLayout = new javax.swing.GroupLayout(SendPanel);
         SendPanel.setLayout(SendPanelLayout);
@@ -137,20 +199,17 @@ boolean listening = false;
                         .addComponent(MessageText, javax.swing.GroupLayout.PREFERRED_SIZE, 309, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(18, 18, 18)
                 .addComponent(EncryptButton)
-                .addGap(29, 29, 29)
-                .addComponent(SendButton)
-                .addContainerGap(32, Short.MAX_VALUE))
+                .addContainerGap(124, Short.MAX_VALUE))
         );
         SendPanelLayout.setVerticalGroup(
             SendPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(SendPanelLayout.createSequentialGroup()
                 .addGap(20, 20, 20)
-                .addGroup(SendPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(MessageLabel2)
-                    .addComponent(MessageText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(SendPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(EncryptButton)
                     .addGroup(SendPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(EncryptButton)
-                        .addComponent(SendButton)))
+                        .addComponent(MessageLabel2)
+                        .addComponent(MessageText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(18, 18, 18)
                 .addGroup(SendPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(AESEncryptedMessageLabel2)
@@ -163,7 +222,7 @@ boolean listening = false;
                 .addGroup(SendPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(RSAEncryptedMessageLabel2)
                     .addComponent(MessageRSAEncrypted, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(189, Short.MAX_VALUE))
+                .addContainerGap(206, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Send", SendPanel);
@@ -176,13 +235,6 @@ boolean listening = false;
 
         RSADecryptedMessageLabel1.setFont(new java.awt.Font("Segoe UI Light", 0, 14)); // NOI18N
         RSADecryptedMessageLabel1.setText("Plaintext message:");
-
-        Listen.setText("Start Listening");
-        Listen.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ListenActionPerformed(evt);
-            }
-        });
 
         SHAHashedMessageLabel.setFont(new java.awt.Font("Segoe UI Light", 0, 14)); // NOI18N
         SHAHashedMessageLabel.setText("SHA1 Hashed Message: ");
@@ -198,7 +250,6 @@ boolean listening = false;
                         .addComponent(AESDecryptedMessageLabel)
                         .addGap(19, 19, 19)
                         .addComponent(MessageAESReceived, javax.swing.GroupLayout.PREFERRED_SIZE, 309, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(Listen, javax.swing.GroupLayout.PREFERRED_SIZE, 121, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(ReceivePanelLayout.createSequentialGroup()
                         .addGroup(ReceivePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(RSADecryptedMessageLabel)
@@ -230,25 +281,44 @@ boolean listening = false;
                 .addGroup(ReceivePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(RSADecryptedMessageLabel1)
                     .addComponent(MessageReceived, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(13, 13, 13)
-                .addComponent(Listen, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(138, Short.MAX_VALUE))
+                .addContainerGap(205, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Receive", ReceivePanel);
 
-        ConnectButton.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
-        ConnectButton.setText("Connect");
-        ConnectButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ConnectButtonActionPerformed(evt);
-            }
-        });
-
         jButton3.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
         jButton3.setText("Generate Session Key");
 
-        jScrollPane1.setViewportView(ConnectionOutput);
+        SendButton.setText("Send");
+        SendButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SendButtonActionPerformed(evt);
+            }
+        });
+
+        Output.setColumns(20);
+        Output.setRows(5);
+        jScrollPane1.setViewportView(Output);
+
+        javax.swing.GroupLayout OutputPanelLayout = new javax.swing.GroupLayout(OutputPanel);
+        OutputPanel.setLayout(OutputPanelLayout);
+        OutputPanelLayout.setHorizontalGroup(
+            OutputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(OutputPanelLayout.createSequentialGroup()
+                .addComponent(inputText)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(SendButton, javax.swing.GroupLayout.PREFERRED_SIZE, 61, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addComponent(jScrollPane1)
+        );
+        OutputPanelLayout.setVerticalGroup(
+            OutputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, OutputPanelLayout.createSequentialGroup()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 163, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(OutputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(inputText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SendButton)))
+        );
 
         javax.swing.GroupLayout ConnectPanelLayout = new javax.swing.GroupLayout(ConnectPanel);
         ConnectPanel.setLayout(ConnectPanelLayout);
@@ -258,22 +328,18 @@ boolean listening = false;
                 .addContainerGap()
                 .addGroup(ConnectPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(ConnectPanelLayout.createSequentialGroup()
-                        .addComponent(ConnectButton, javax.swing.GroupLayout.PREFERRED_SIZE, 179, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 463, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(122, 122, 122))
-                    .addGroup(ConnectPanelLayout.createSequentialGroup()
                         .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 301, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                        .addContainerGap(402, Short.MAX_VALUE))
+                    .addGroup(ConnectPanelLayout.createSequentialGroup()
+                        .addComponent(OutputPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(27, 27, 27))))
         );
         ConnectPanelLayout.setVerticalGroup(
             ConnectPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(ConnectPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(ConnectPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1)
-                    .addComponent(ConnectButton, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE))
-                .addGap(131, 131, 131)
+                .addComponent(OutputPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 47, Short.MAX_VALUE)
                 .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -290,9 +356,11 @@ boolean listening = false;
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1)
-                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 720, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(jTabbedPane1))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -306,54 +374,6 @@ boolean listening = false;
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void ConnectButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ConnectButtonActionPerformed
-        // Start the server if it is not already running
-        if(!Server.serverOnlineCheck()){
-            try {
-                System.out.println("Entered Server");
-                ConnectionOutput.setText(server.start());
-                //trying to establish connection to the server
-                ConnectionOutput.setText(ConnectionOutput.getText() + client.connect() + "\n");                
-            } catch (IOException ex) {
-                Logger.getLogger(SecurityGUI.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        // Else connect the client to the server
-        else{
-            try {
-                ConnectionOutput.setText("----------------Client----------------\n" + client.connect() + "\n");
-            } catch (IOException ex) {
-                Logger.getLogger(SecurityGUI.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        
-    }//GEN-LAST:event_ConnectButtonActionPerformed
-
-    private void SendButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SendButtonActionPerformed
-        iteration++;
-        SendSocket send = new SendSocket();
-        send.bind(MessageText.getText(),port+iteration);
-        ConnectionOutput.setText(ConnectionOutput.getText() + "\nMessage Sent: \"" + MessageText.getText() + "\"\n");
-        
-    }//GEN-LAST:event_SendButtonActionPerformed
-
-    private void ListenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ListenActionPerformed
-        if (listening){
-            listening = false;
-            Listen.setText("Start Listening");
-        }
-        else {
-            iteration++;
-            listening = true;
-            Listen.setText("Stop Listening");
-            ReceiveSocket receive = new ReceiveSocket(); 
-            MessageReceived.setText(receive.listen(port+iteration));
-            ConnectionOutput.setText(ConnectionOutput.getText() + "\nMessage Received: \"" + MessageReceived.getText() + "\"\n");
-            Listen.setText("Start Listening");
-            listening = false;
-        }
-    }//GEN-LAST:event_ListenActionPerformed
 
     private void EncryptButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EncryptButtonActionPerformed
         AES aes = new AES();
@@ -369,12 +389,23 @@ boolean listening = false;
         MessageRSAEncrypted.setText(rsa.Encrypt(MessageText.getText()));
         MessageRSAReceived.setText(rsa.Decrypt(MessageRSAEncrypted.getText()));
     }//GEN-LAST:event_EncryptButtonActionPerformed
-    
+
+    private void SendButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SendButtonActionPerformed
+        try
+            {
+                dout.writeUTF(sendTo + " "  + "DATA" + " " + inputText.getText().toString());            
+                Output.append("\n" + LoginName + " Says: " + inputText.getText().toString());    
+                inputText.setText("");
+            }
+            catch(Exception ex)
+            {} 
+            
+    }//GEN-LAST:event_SendButtonActionPerformed
     
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) {
+    public static void main(String args[]) throws IOException, InterruptedException, Exception {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -391,17 +422,18 @@ boolean listening = false;
             java.util.logging.Logger.getLogger(SecurityGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
-        new SecurityGUI().setVisible(true);
+        //if(!serverOnlineCheck())new Server();
+        SecurityGUI gui = new SecurityGUI("Client1","Client2");
+        gui.setVisible(true);
     }
+    
+    
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel AESDecryptedMessageLabel;
     private javax.swing.JLabel AESEncryptedMessageLabel2;
-    private javax.swing.JButton ConnectButton;
     private javax.swing.JPanel ConnectPanel;
-    private javax.swing.JTextPane ConnectionOutput;
     private javax.swing.JButton EncryptButton;
-    private javax.swing.JButton Listen;
     private javax.swing.JTextField MessageAESEncrypted;
     private javax.swing.JTextField MessageAESReceived;
     private javax.swing.JTextField MessageHashReceived;
@@ -411,6 +443,8 @@ boolean listening = false;
     private javax.swing.JTextField MessageReceived;
     private javax.swing.JTextField MessageSHA;
     private javax.swing.JTextField MessageText;
+    private javax.swing.JTextArea Output;
+    private javax.swing.JPanel OutputPanel;
     private javax.swing.JLabel RSADecryptedMessageLabel;
     private javax.swing.JLabel RSADecryptedMessageLabel1;
     private javax.swing.JLabel RSAEncryptedMessageLabel2;
@@ -419,10 +453,27 @@ boolean listening = false;
     private javax.swing.JLabel SHAHashedMessageLabel;
     private javax.swing.JButton SendButton;
     private javax.swing.JPanel SendPanel;
+    private javax.swing.JTextField inputText;
     private javax.swing.JButton jButton3;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JTextField jTextField3;
     // End of variables declaration//GEN-END:variables
 }
+
+class CustomOutputStream extends OutputStream {
+    private JTextArea textArea;
+     
+    public CustomOutputStream(JTextArea textArea) {
+        this.textArea = textArea;
+    }
+     
+    @Override
+    public void write(int b) throws IOException {
+        // redirects data to the text area
+        textArea.append(String.valueOf((char)b));
+        // scrolls the text area to the end of data
+        textArea.setCaretPosition(textArea.getDocument().getLength());
+    }
+}
+
